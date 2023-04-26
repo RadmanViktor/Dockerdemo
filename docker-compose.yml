@@ -1,0 +1,55 @@
+# Docker compose syntax (named volumes, syntax för services och dependecies)
+version: '3.5'
+
+# Definerar upp de containers vi behöver för vår applikation
+# Varje sektion i services är en container och deras konfigurationer
+services:
+  # Service namn
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    # Konfigurationer specifikt för postgres imagen
+    environment:
+      POSTGRES_USER: admin 
+      POSTGRES_PASSWORD: admin 
+    # Directory där postgres lagrar sina data filer. 
+    # Nu lagras data på host maskinen för att vi inte har specat default pathen -> var/lib/postgresql/data
+    # Detta gör vi för att om containern stängs av eller skapas om så har vi persistat datat.
+      PGDATA: /data/postgres
+    # All data som hamnar i data/postgres kommer nu att lagras i en lokal volym som heter postgres
+    volumes:
+      - postgres:/data/postgres
+    # Mappa lokal port till port i container
+    ports:
+      - "5432:5432"
+    # Använd samma nät som klienten för att kunna kommunicera. 
+    networks:
+      - postgres
+    # Om containern dör av någon anledning startas den upp igen
+    restart: unless-stopped
+  
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.se 
+      PGADMIN_DEFAULT_PASSWORD: admin 
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+       - pgadmin:/var/lib/pgadmin
+
+    ports:
+      - "5050:80"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
+
+      # Names volumes: lokaliserar sig på platsen där docker körs.På hosten som kör docker engine 
+      # Bind mounts: Mountar ett directory från hosten in i containern.
+volumes:
+    postgres:
+    pgadmin: 
